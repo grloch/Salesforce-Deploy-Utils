@@ -1,0 +1,19 @@
+{
+  "name": "salesforcexmlmerger",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "merge": "npx ts-node src/merge.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^16.11.10",
+    "typescript": "^4.5.2"
+  },
+  "dependencies": {
+    "xml-js": "^1.6.11"
+  }
+}
