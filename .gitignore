@@ -1,2 +1,4 @@
 node_modules/
 files/
+.env
+.env.example
