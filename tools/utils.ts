@@ -79,7 +79,7 @@ export class packageController {
         }
     }
 
-    public buildFile() {
+    public buildFile(path: string = '') {
         let totalSize = 0;
         console.log(`Building metadata:`);
         for (const mtdaName of [...this.packageMembers.keys()].sort()) {
@@ -98,13 +98,43 @@ export class packageController {
         if (this.packageMembers.has('Profile')) console.log('\n>>> Package contains Profile metadata.\n');
 
 
+        if (path != '') this.saveFile(path);
+
         return this.xmlFile;
     }
 
+
     public saveFile(path: string, fileName: string = '') {
-        Fs.writeFileSync(
-            fileName != '' ? Path.join(path, fileName) : path,
+        let savePath = fileName != '' ? Path.join(path, fileName) : path
+
+        if (Fs.existsSync(savePath)) console.log(`${savePath} already exist, file was replaced!`);
+
+        Fs.writeFileSync(savePath,
             convert.json2xml(this.xmlFile, { compact: true, ignoreComment: true, spaces: 4 })
         );
+    }
+
+    public processFile(file: any) {
+        for (const element of file.elements[0].elements) {
+            if (element.name != 'types') continue;
+
+            let fileTypes = element.elements;
+            var typeName: string = '';
+
+            const members: string[] = [];
+
+            for (const typeItem of fileTypes) {
+                if (typeName == '' && typeItem.name == 'name') {
+                    typeName = typeItem.elements[0].text;
+                }
+                else if (typeItem.name == 'members') {
+                    members.push(typeItem.elements[0].text);
+                }
+            }
+
+            if (typeName == '') continue;
+
+            for (let m of members) this.addMetadata(typeName, m);
+        }
     }
 }

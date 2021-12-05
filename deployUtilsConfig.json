@@ -1,0 +1,8 @@
+{
+    "package": {
+        "saveAs": "mergedPackage.xml",
+        "manifestDir": [
+            "manifest"
+        ]
+    }
+}
