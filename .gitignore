@@ -5,3 +5,4 @@ files/
 manifest/
 .sfdx/sfdx-config.json
 logs/
+retrieved/*
