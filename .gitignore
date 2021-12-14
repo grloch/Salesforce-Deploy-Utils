@@ -1,4 +1,6 @@
+force-app/main/default
 node_modules/
 files/
 .env
 manifest/
+.sfdx/sfdx-config.json
