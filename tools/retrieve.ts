@@ -34,16 +34,13 @@ const deployUtilsConfig = require("../deployUtilsConfig.json");
     );
   }
 
-  //   let manifestFile = "F:/projects/Salesforce-Deploy-Utils/manifest/package.xml";
-  let targetAlias = "SF_PRODUCTION";
+  let targetAlias = "";
 
   defaultLogger.trace(`Awaiting user choose target manifest`);
 
   var manifestFile = "";
 
-  if (!manifestFile.endsWith(".xml")) {
-    return infoLogger.error(`Choosed path isn't a valid xml file`);
-  }
+  
 
   do {
     manifestFile = await inquirer.getFileOrDirPath({
@@ -70,10 +67,14 @@ const deployUtilsConfig = require("../deployUtilsConfig.json");
     }
   } while (manifestFile == "");
 
-  // let targetAlias = await inquirer.getListItem({
-  //     message: 'Select target environment',
-  //     options: aliasOptions
-  // });
+  if (!manifestFile.endsWith(".xml")) {
+    return infoLogger.error(`Choosed path isn't a valid xml file`);
+  }
+
+  let targetAlias = await inquirer.getListItem({
+      message: 'Select target environment',
+      options: aliasOptions
+  });
 
   let downloadDir = defaultPackageDirectorie();
 
