@@ -71,7 +71,7 @@ const deployUtilsConfig = require("../deployUtilsConfig.json");
     return infoLogger.error(`Choosed path isn't a valid xml file`);
   }
 
-  let targetAlias = await inquirer.getListItem({
+  targetAlias = await inquirer.getListItem({
       message: 'Select target environment',
       options: aliasOptions
   });
