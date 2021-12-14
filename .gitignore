@@ -4,3 +4,4 @@ files/
 .env
 manifest/
 .sfdx/sfdx-config.json
+logs/
