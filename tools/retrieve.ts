@@ -15,6 +15,9 @@ require("dotenv").config();
 const deployUtilsConfig = require("../deployUtilsConfig.json");
 
 (async () => {
+  if (Fs.existsSync('force-app')) Fs.rmdirSync('force-app', { recursive: true });
+  Fs.mkdirSync(Path.join('force-app', 'main'), { recursive: true });
+
   infoLogger.trace(`Preparing to retrive Salesforce source (${process.cwd()})`);
 
   const aliasOptions: Array<string | { name: string; value: string }> = [];
