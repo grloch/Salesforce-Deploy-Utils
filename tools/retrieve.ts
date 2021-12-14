@@ -1,9 +1,10 @@
 import * as inquirer from "./inquirer";
-import * as Fs from "fs";
+// import * as Fs from "fs";
 import * as Path from "path";
 import { defaultPackageDirectorie } from "./utils";
 import * as ChildProcess from "child_process";
 import getLogger from "./logger";
+import * as Fs from "fs-extra";
 
 const { default: defaultLogger, info: infoLogger } = getLogger({
   indentifyer: "retrieve",
@@ -40,8 +41,6 @@ const deployUtilsConfig = require("../deployUtilsConfig.json");
 
   var manifestFile = "";
 
-  
-
   do {
     manifestFile = await inquirer.getFileOrDirPath({
       message: "Select a xml file to retrieve",
@@ -72,13 +71,11 @@ const deployUtilsConfig = require("../deployUtilsConfig.json");
   }
 
   targetAlias = await inquirer.getListItem({
-      message: 'Select target environment',
-      options: aliasOptions
+    message: "Select target environment",
+    options: aliasOptions,
   });
 
   let downloadDir = defaultPackageDirectorie();
-
-  //   console.log({ manifestFile, targetAlias });
 
   defaultLogger.trace(
     "command ",
@@ -95,7 +92,18 @@ const deployUtilsConfig = require("../deployUtilsConfig.json");
     console.log(data);
   });
 
+  // TODO Better logs
   function moveSource(err: any, stout: any, stderr: any) {
-    console.log("ended");
+    let destDir = Path.join("retrieved", targetAlias);
+    if (!Fs.existsSync("retrieved")) Fs.mkdirSync("retrieved");
+
+    if (Fs.existsSync(destDir)) Fs.rmSync(destDir, { recursive: true });
+
+    console.log("Moving files of " + downloadDir + " to " + destDir);
+
+    Fs.move(downloadDir, destDir, function (err: any) {
+      if (err) return console.error(err);
+      console.log("Files moved to " + destDir);
+    });
   }
 })();
