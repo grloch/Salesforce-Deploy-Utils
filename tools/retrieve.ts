@@ -16,6 +16,7 @@ const deployUtilsConfig = require("../deployUtilsConfig.json");
 
 (async () => {
   if (Fs.existsSync('force-app')) Fs.rmdirSync('force-app', { recursive: true });
+
   Fs.mkdirSync(Path.join('force-app', 'main'), { recursive: true });
 
   infoLogger.trace(`Preparing to retrive Salesforce source (${process.cwd()})`);
@@ -104,9 +105,9 @@ const deployUtilsConfig = require("../deployUtilsConfig.json");
 
     console.log("Moving files of " + downloadDir + " to " + destDir);
 
-    Fs.move(downloadDir, destDir, function (err: any) {
-      if (err) return console.error(err);
-      console.log("Files moved to " + destDir);
-    });
+    Fs.moveSync(downloadDir, destDir);
+    Fs.copyFileSync(manifestFile, Path.join(destDir, 'package.xml'));
+
+    console.log("Files moved to " + destDir);
   }
 })();
