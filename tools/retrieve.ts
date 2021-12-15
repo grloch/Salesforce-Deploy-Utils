@@ -39,6 +39,7 @@ const deployUtilsConfig = require("../deployUtilsConfig.json");
     );
   }
 
+  // TODO Change to multialias 
   let targetAlias = "";
 
   defaultLogger.trace(`Awaiting user choose target manifest`);
