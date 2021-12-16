@@ -36,11 +36,20 @@ export default function getLogger(options: { indentifyer?: string }) {
     categories: {
       default: { appenders: ["default"], level: "all" },
       info: { appenders: ["default", "info"], level: "all" },
+      sfdx: { appenders: ["default", "info"], level: "all" },
     },
   });
 
   return {
     default: log4js.getLogger("default"),
     info: log4js.getLogger("info"),
+    sfdx: log4js.getLogger("sfdx"),
   };
+}
+
+
+export function prettySfdxLog(sfdxLog: string) {
+
+
+  return sfdxLog
 }

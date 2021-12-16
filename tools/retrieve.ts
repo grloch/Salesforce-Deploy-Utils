@@ -6,7 +6,7 @@ import * as ChildProcess from "child_process";
 import getLogger from "./logger";
 import * as Fs from "fs-extra";
 
-const { default: defaultLogger, info: infoLogger } = getLogger({
+const { default: defaultLogger, info: infoLogger, sfdx: sfdxLogger } = getLogger({
   indentifyer: "retrieve",
 });
 
@@ -82,33 +82,35 @@ const deployUtilsConfig = require("../deployUtilsConfig.json");
 
   let downloadDir = defaultPackageDirectorie();
 
-  defaultLogger.trace(
-    "command ",
-    `sfdx force:source:retrieve -x="${manifestFile}" -u="${process.env[targetAlias]}"`
-  );
+  var sfdxCommand = `sfdx force:source:retrieve -x='${manifestFile}' -u='${process.env[targetAlias]}'`;
 
-  const ls = ChildProcess.exec(
-    `sfdx force:source:retrieve -x="${manifestFile}" -u="${process.env[targetAlias]}"`,
-    moveSource
-  );
+  defaultLogger.trace("command ", `"${sfdxCommand}"`);
 
-  //@ts-ignore
-  ls.stdout.on("data", function (data) {
-    console.log(data);
-  });
+  var destDir = Path.join("retrieved", targetAlias);
 
-  // TODO Better logs
-  function moveSource(err: any, stout: any, stderr: any) {
-    let destDir = Path.join("retrieved", targetAlias);
+  const sfdxProcess = ChildProcess.exec(sfdxCommand, (e: any, sOut: any, sErr: any) => {
+    // TODO Better logs
     if (!Fs.existsSync("retrieved")) Fs.mkdirSync("retrieved");
-
     if (Fs.existsSync(destDir)) Fs.rmSync(destDir, { recursive: true });
 
-    console.log("Moving files of " + downloadDir + " to " + destDir);
+    infoLogger.info("Moving files of " + downloadDir + " to " + destDir);
 
     Fs.moveSync(downloadDir, destDir);
     Fs.copyFileSync(manifestFile, Path.join(destDir, 'package.xml'));
 
-    console.log("Files moved to " + destDir);
-  }
-})();
+    infoLogger.info("Files moved to " + destDir);
+  });
+
+  //@ts-ignore
+  sfdxProcess.stdout.on("data", (data) => {
+    for (var i of data.split('\n')) {
+      if (!i || i.trim() == '') continue;
+
+      sfdxLogger.info(i)
+    }
+
+  });
+
+})().then(() => {
+
+})
