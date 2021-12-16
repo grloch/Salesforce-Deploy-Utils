@@ -15,6 +15,10 @@ require("dotenv").config();
 const deployUtilsConfig = require("../deployUtilsConfig.json");
 
 (async () => {
+  if (Fs.existsSync('force-app')) Fs.rmdirSync('force-app', { recursive: true });
+
+  Fs.mkdirSync(Path.join('force-app', 'main'), { recursive: true });
+
   infoLogger.trace(`Preparing to retrive Salesforce source (${process.cwd()})`);
 
   const aliasOptions: Array<string | { name: string; value: string }> = [];
@@ -35,6 +39,7 @@ const deployUtilsConfig = require("../deployUtilsConfig.json");
     );
   }
 
+  // TODO Change to multialias 
   let targetAlias = "";
 
   defaultLogger.trace(`Awaiting user choose target manifest`);
@@ -101,9 +106,9 @@ const deployUtilsConfig = require("../deployUtilsConfig.json");
 
     console.log("Moving files of " + downloadDir + " to " + destDir);
 
-    Fs.move(downloadDir, destDir, function (err: any) {
-      if (err) return console.error(err);
-      console.log("Files moved to " + destDir);
-    });
+    Fs.moveSync(downloadDir, destDir);
+    Fs.copyFileSync(manifestFile, Path.join(destDir, 'package.xml'));
+
+    console.log("Files moved to " + destDir);
   }
 })();
