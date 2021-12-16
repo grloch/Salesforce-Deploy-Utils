@@ -3,11 +3,8 @@ import * as Path from "path";
 import { defaultPackageDirectorie } from "./utils";
 import * as ChildProcess from "child_process";
 import getLogger from "./logger";
+import * as Utils from "./utils";
 import * as Fs from "fs-extra";
-
-
-// TODO set logs
-
 
 const { default: defaultLogger, info: infoLogger } = getLogger({
     indentifyer: "deploy",
@@ -18,6 +15,14 @@ require("dotenv").config();
 const deployUtilsConfig = require("../deployUtilsConfig.json");
 
 (async () => {
+    const aliasOptions = Utils.getOrgAlias();
+    if (aliasOptions.length == 0) {
+        return defaultLogger.error(
+            `No SFDX alias founded on ./.env, make sure that all org alias variables starts with "SF_" and has a value: "SF_PROD=MyClientProdOrg"`
+        );
+    }
+    defaultLogger.trace(`Avaliable org alias: ${JSON.stringify(aliasOptions)}`);
+
     if (!Fs.pathExistsSync(Path.join('retrieved'))) {
         return infoLogger.error(`Didn't found ./retrieved, make sure you retrieved your metadata first.`);
     }
@@ -34,18 +39,20 @@ const deployUtilsConfig = require("../deployUtilsConfig.json");
     }
 
     let deploySourcepath = Path.join('force-app', 'main', 'default');
-    // if (Fs.readdirSync(deploySourcepath).length > 0) {
-    //     if (Fs.existsSync(deploySourcepath)) {
-    //         let message = `${deploySourcepath} already has files, if you continue, you may lose changes outside it, continue deploy?`;
+    if (!Fs.existsSync(deploySourcepath)) {
+        Fs.mkdirSync(deploySourcepath, { recursive: true })
+    }
+    else if (Fs.readdirSync(deploySourcepath).length > 0) {
+        if (Fs.existsSync(deploySourcepath)) {
+            let message = `${deploySourcepath} already has files, if you continue, you may lose changes outside it, continue deploy?`;
 
-    //         if (!await inquirer.confirm({ message })) {
-    //             return infoLogger.info("Process exit by the user");
-    //         }
-    //     }
-    // }
+            if (!await inquirer.confirm({ message })) {
+                return infoLogger.info("Process exit by the user");
+            }
+        }
+    }
 
     var targetDir = "";
-
     do {
         targetDir = await inquirer.getListItem({ message: 'Select a dir to deploy', options: sourceOptions });
 
@@ -55,35 +62,51 @@ const deployUtilsConfig = require("../deployUtilsConfig.json");
 
     } while (targetDir == "");
 
-    const orgAlias = targetDir.split(Path.sep).pop()
+    defaultLogger.info("Using " + targetDir);
 
-    // defaultLogger.info("Using " + targetDir);
+    let orgAlias = "";
+    orgAlias = await inquirer.getListItem({
+        message: "Select target environment",
+        options: aliasOptions,
+    });
 
-    // var targetPackage = Path.join(targetDir, 'package.xml');
-
-    // if (!Fs.existsSync(targetPackage)) return infoLogger.error(`${targetDir} doesn't has a package.xml file, make sure path ${targetPackage} exists.`);
-
-
-    // Fs.rmdirSync(deploySourcepath, { recursive: true });
-    // Fs.mkdirSync(deploySourcepath, { recursive: true });
+    defaultLogger.trace(`Deploy using alias: ${orgAlias}`);
 
 
-    // infoLogger.info("Copying files of " + targetDir + " to " + deploySourcepath);
-
-    // Fs.copySync(targetDir, deploySourcepath);
-
-    // Fs.rmSync(Path.join(deploySourcepath, 'package.xml'))
-
-    // infoLogger.info("Files copied to " + deploySourcepath);
+    var targetPackage = Path.join(targetDir, 'package.xml');
+    if (!Fs.existsSync(targetPackage)) return infoLogger.error(`${targetDir} doesn't has a package.xml file, make sure path ${targetPackage} exists.`);
 
     let tempPackage = Path.join(...[...deployUtilsConfig.package.manifestDir, '__TempPackage.xml'])
 
-    // Fs.copyFileSync(targetPackage, tempPackage);
+    Fs.rmdirSync(deploySourcepath, { recursive: true });
+    Fs.mkdirSync(deploySourcepath, { recursive: true });
+
+    infoLogger.info("Copying files of " + targetDir + " to " + deploySourcepath);
+
+    Fs.copySync(targetDir, deploySourcepath);
+    Fs.rmSync(Path.join(deploySourcepath, 'package.xml'))
+    Fs.copyFileSync(targetPackage, tempPackage);
+
+    infoLogger.info("Files copied to " + deploySourcepath);
 
     let sfdxCmd = `sfdx force:source:deploy -x="${tempPackage}" -u="${process.env[orgAlias]}"`
+    defaultLogger.trace(`SFDX command: '${sfdxCmd}'`);
 
-    console.log({ sfdxCmd });
+    // set test lvl
+    //sfdx force:source:deploy -u= -x= --checkonly --testlevel RunSpecifiedTests --runtests ""
 
-    // build sfdx process
+    // run sfdx process
+    //
 
+    // delete files of force-app/main/defaul
+    let deleteFiles = await inquirer.confirm({ message: `Empty ${deploySourcepath}?` })
+    defaultLogger.trace({ deleteFiles });
+    if (deleteFiles) {
+        Fs.rmdirSync(deploySourcepath, { recursive: true });
+        
+        defaultLogger.trace(`Removed deployed files from ${deploySourcepath}`);
+        
+        Fs.mkdirSync(deploySourcepath, { recursive: true })
+        defaultLogger.trace(`Re created ${deploySourcepath}`);
+    }
 })();

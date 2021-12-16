@@ -74,6 +74,23 @@ export function defaultPackageDirectorie() {
   return Path.join(sfSourcePath, "main", "default");
 }
 
+export function getOrgAlias() {
+  const aliasOptions: Array<string | { name: string; value: string }> = [];
+
+  for (const i of Object.keys(process.env)
+    .filter((i) => i.startsWith("SF_"))
+    .sort()) {
+    if (!process.env[i] || process.env[i] == "") continue;
+
+    aliasOptions.push({ name: <string>process.env[i], value: <string>i });
+  }
+
+  return aliasOptions;
+}
+
+export function getManifestFile(){
+  
+}
 export class packageController {
   private packageMembers: Map<string, Set<string>>;
   private xmlFile: any;

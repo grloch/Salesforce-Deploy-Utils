@@ -1,3 +1,4 @@
+// TODO convert to class and global var
 import * as Fs from "fs";
 import * as Path from "path";
 import * as log4js from "log4js";
@@ -44,7 +45,10 @@ export default function getLogger(options: { indentifyer?: string }) {
     default: log4js.getLogger("default"),
     info: log4js.getLogger("info"),
     sfdx: log4js.getLogger("sfdx"),
+    path: logPath
   };
+
+  
 }
 
 

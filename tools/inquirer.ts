@@ -42,7 +42,7 @@ export async function getListItem(options: {
 
 export async function confirm(options: {
   message: string;
-  option: { y: string; n: string };
+  option?: { y: string; n: string };
 }) {
   let response = (
     await inquirer.prompt({

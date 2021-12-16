@@ -1,12 +1,12 @@
 import * as inquirer from "./inquirer";
 // import * as Fs from "fs";
 import * as Path from "path";
-import { defaultPackageDirectorie } from "./utils";
+import { defaultPackageDirectorie, getOrgAlias } from "./utils";
 import * as ChildProcess from "child_process";
 import getLogger from "./logger";
 import * as Fs from "fs-extra";
 
-const { default: defaultLogger, info: infoLogger, sfdx: sfdxLogger } = getLogger({
+const { default: defaultLogger, info: infoLogger, sfdx: sfdxLogger, path: logPath } = getLogger({
   indentifyer: "retrieve",
 });
 
@@ -14,23 +14,15 @@ require("dotenv").config();
 
 const deployUtilsConfig = require("../deployUtilsConfig.json");
 
+
+
 (async () => {
-  if (Fs.existsSync('force-app')) Fs.rmdirSync('force-app', { recursive: true });
-
-  Fs.mkdirSync(Path.join('force-app', 'main'), { recursive: true });
-
   infoLogger.trace(`Preparing to retrive Salesforce source (${process.cwd()})`);
 
-  const aliasOptions: Array<string | { name: string; value: string }> = [];
+  if (Fs.existsSync('force-app')) Fs.rmdirSync('force-app', { recursive: true });
+  Fs.mkdirSync(Path.join('force-app', 'main'), { recursive: true });
 
-  for (const i of Object.keys(process.env)
-    .filter((i) => i.startsWith("SF_"))
-    .sort()) {
-    if (!process.env[i] || process.env[i] == "") continue;
-
-    aliasOptions.push({ name: <string>process.env[i], value: <string>i });
-  }
-
+  const aliasOptions = getOrgAlias();
   defaultLogger.trace(`Avaliable org alias: ${JSON.stringify(aliasOptions)}`);
 
   if (aliasOptions.length == 0) {
@@ -39,12 +31,8 @@ const deployUtilsConfig = require("../deployUtilsConfig.json");
     );
   }
 
-  // TODO Change to multialias 
-  let targetAlias = "";
-
-  defaultLogger.trace(`Awaiting user choose target manifest`);
-
   var manifestFile = "";
+  defaultLogger.trace(`Awaiting user choose target manifest`);
 
   do {
     manifestFile = await inquirer.getFileOrDirPath({
@@ -63,18 +51,14 @@ const deployUtilsConfig = require("../deployUtilsConfig.json");
         option: { y: "Cancel", n: "Continue" },
       });
 
-      if (cancel) {
-        return infoLogger.info(`Retrieve canceled by the user`);
-      }
+      if (cancel) return infoLogger.info(`Retrieve canceled by the user`);
     } else {
       break;
     }
   } while (manifestFile == "");
 
-  if (!manifestFile.endsWith(".xml")) {
-    return infoLogger.error(`Choosed path isn't a valid xml file`);
-  }
-
+  // TODO Change to multialias 
+  let targetAlias = "";
   targetAlias = await inquirer.getListItem({
     message: "Select target environment",
     options: aliasOptions,
@@ -119,5 +103,9 @@ const deployUtilsConfig = require("../deployUtilsConfig.json");
   }
 
 })().then(() => {
-
+  console.log(`Retrieve ended process, log saved at ${logPath}`);
+  // TODO keep log?
+}).catch((err: any) => {
+  defaultLogger.error(err);
+  console.log(`Process ended with error, log saved at ${logPath}`);
 })

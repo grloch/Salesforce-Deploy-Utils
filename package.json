@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "merge": "npx ts-node tools/xml/mergeManifest.ts",
-    "retrieve": "npx ts-node tools/retrieve.ts"
+    "retrieve": "npx ts-node tools/retrieve.ts",
+    "deploy": "npx ts-node tools/deploy.ts"
   },
   "keywords": [],
   "author": "",
