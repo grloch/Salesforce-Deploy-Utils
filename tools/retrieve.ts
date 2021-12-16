@@ -82,34 +82,41 @@ const deployUtilsConfig = require("../deployUtilsConfig.json");
 
   let downloadDir = defaultPackageDirectorie();
 
-  var sfdxCommand = `sfdx force:source:retrieve -x='${manifestFile}' -u='${process.env[targetAlias]}'`;
-
-  defaultLogger.trace("command ", `"${sfdxCommand}"`);
+  var sfdxCommand = `sfdx force:source:retrieve -x="${manifestFile}" -u="${process.env[targetAlias]}"`;
+  defaultLogger.trace("command ", `'${sfdxCommand}'`);
 
   var destDir = Path.join("retrieved", targetAlias);
+  defaultLogger.trace(`Ouput will be saved at ${destDir}`);
 
-  const sfdxProcess = ChildProcess.exec(sfdxCommand, (e: any, sOut: any, sErr: any) => {
-    // TODO Better logs
-    if (!Fs.existsSync("retrieved")) Fs.mkdirSync("retrieved");
-    if (Fs.existsSync(destDir)) Fs.rmSync(destDir, { recursive: true });
 
-    infoLogger.info("Moving files of " + downloadDir + " to " + destDir);
+  try {
+    defaultLogger.trace(`Executing SFDX command`);
 
-    Fs.moveSync(downloadDir, destDir);
-    Fs.copyFileSync(manifestFile, Path.join(destDir, 'package.xml'));
+    const sfdxProcess = ChildProcess.exec(sfdxCommand, (e: any, sOut: any, sErr: any) => {
+      // TODO Better logs
+      if (!Fs.existsSync("retrieved")) Fs.mkdirSync("retrieved");
+      if (Fs.existsSync(destDir)) Fs.rmSync(destDir, { recursive: true });
 
-    infoLogger.info("Files moved to " + destDir);
-  });
+      infoLogger.info("Moving files of " + downloadDir + " to " + destDir);
 
-  //@ts-ignore
-  sfdxProcess.stdout.on("data", (data) => {
-    for (var i of data.split('\n')) {
-      if (!i || i.trim() == '') continue;
+      Fs.moveSync(downloadDir, destDir);
+      Fs.copyFileSync(manifestFile, Path.join(destDir, 'package.xml'));
 
-      sfdxLogger.info(i)
-    }
+      infoLogger.info("Files moved to " + destDir);
+    });
 
-  });
+    //@ts-ignore
+    sfdxProcess.stdout.on("data", (data) => {
+      for (var i of data.split('\n')) {
+        if (!i || i.trim() == '') continue;
+
+        sfdxLogger.info(i)
+      }
+
+    });
+  } catch (error) {
+    defaultLogger.error("SFDX process error: " + error)
+  }
 
 })().then(() => {
 
