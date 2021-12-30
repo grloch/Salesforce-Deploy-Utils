@@ -1,6 +1,11 @@
 import * as inquirer from "inquirer";
 import * as Path from "path";
 
+interface getListItemParams {
+  message: string; multiples?: Boolean;
+  options: Array<string | { name: string; value: string }>;
+}
+
 inquirer.registerPrompt(
   "fileTreeSelection",
   require("inquirer-file-tree-selection-prompt")
@@ -23,21 +28,22 @@ export async function getFileOrDirPath(options: {
   return response;
 }
 
-export async function getListItem(options: {
-  message: string;
-  options: Array<string | { name: string; value: string }>;
-}) {
-  let response = (
-    await inquirer.prompt({
-      //@ts-ignore
-      type: "list",
-      name: "resp",
-      message: options.message,
-      choices: options.options,
-    })
-  ).resp;
+export async function getListItem(options: getListItemParams) {
+  function validate(input: any) {
+    if (options.multiples && input.length <= 0) {
+      return 'select at least one alias option'
+    }
 
-  return response;
+    return true;
+  }
+
+  return (await inquirer.prompt({
+    type: options.multiples ? "checkbox" : "list",
+    name: "resp",
+    message: options.message,
+    choices: options.options,
+    validate: validate
+  })).resp;
 }
 
 export async function confirm(options: {

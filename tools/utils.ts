@@ -1,6 +1,14 @@
 import * as Fs from "fs";
 import * as Path from "path";
 import * as convert from "xml-js";
+import getLogger from "./logger";
+import * as inquirer from "./inquirer";
+
+const deployUtilsConfig = require("../deployUtilsConfig.json");
+
+const { default: defaultLogger, info: infoLogger, sfdx: sfdxLogger, path: logPath } = getLogger({
+  indentifyer: "retrieve",
+})
 
 export function getXMLItemElements(itens: any, target: string) {
   if (!Array.isArray(itens)) itens = [itens];
@@ -85,12 +93,58 @@ export function getOrgAlias() {
     aliasOptions.push({ name: <string>process.env[i], value: <string>i });
   }
 
+  defaultLogger.trace(`Avaliable org alias: ${JSON.stringify(aliasOptions)}`);
+
+
+  if (aliasOptions.length == 0) {
+    let error = `No SFDX alias founded on ./.env, make sure that all org alias variables starts with "SF_" and has a value: "SF_PROD=MyClientProdOrg"`
+    defaultLogger.error(error);
+
+    throw new Error(error);
+  }
+
+
   return aliasOptions;
 }
 
-export function getManifestFile(){
-  
+export async function selectManifestFile() {
+  var manifestFile = "";
+  let message = "Select a xml file to retrieve"
+  let rootPath = Path.join(...deployUtilsConfig.package.manifestDir)
+  defaultLogger.trace(`Awaiting user choose target manifest`);
+
+  do {
+    manifestFile = await inquirer.getFileOrDirPath({ message, rootPath });
+
+    if (!manifestFile.endsWith(".xml")) {
+      manifestFile = "";
+      infoLogger.error(`Choosed path isn't a valid xml file`);
+
+      defaultLogger.trace(`Awaiting user cancel process`);
+
+      let cancel = await inquirer.confirm({
+        message: "Cancel retrieve?", option: { y: "Cancel", n: "Continue" }
+      });
+
+      if (cancel) {
+        infoLogger.info(`Retrieve canceled by the user`);
+        break;
+      }
+    } else {
+      break;
+    }
+  } while (manifestFile == "");
+
+  return manifestFile;
 }
+
+export async function getTargetOrg() {
+  return await inquirer.getListItem({
+    message: "Select target environments",
+    options: getOrgAlias()
+  });
+}
+
 export class packageController {
   private packageMembers: Map<string, Set<string>>;
   private xmlFile: any;
