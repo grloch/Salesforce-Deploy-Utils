@@ -43,6 +43,9 @@ export function xml2json(filePath: string) {
 
   try {
     let rawFile = Fs.readFileSync(filePath).toString();
+
+    if (rawFile == '') return null;
+
     return JSON.parse(convert.xml2json(rawFile, {}));
   } catch (error) {
     console.log(`Fail while parsing ${filePath}:`);
