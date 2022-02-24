@@ -6,9 +6,14 @@ import * as inquirer from "./inquirer";
 
 const deployUtilsConfig = require("../deployUtilsConfig.json");
 
-const { default: defaultLogger, info: infoLogger, sfdx: sfdxLogger, path: logPath } = getLogger({
+const {
+  default: defaultLogger,
+  info: infoLogger,
+  sfdx: sfdxLogger,
+  path: logPath,
+} = getLogger({
   indentifyer: "retrieve",
-})
+});
 
 export function getXMLItemElements(itens: any, target: string) {
   if (!Array.isArray(itens)) itens = [itens];
@@ -44,7 +49,7 @@ export function xml2json(filePath: string) {
   try {
     let rawFile = Fs.readFileSync(filePath).toString();
 
-    if (rawFile == '') return null;
+    if (rawFile == "") return null;
 
     return JSON.parse(convert.xml2json(rawFile, {}));
   } catch (error) {
@@ -98,23 +103,30 @@ export function getOrgAlias() {
 
   defaultLogger.trace(`Avaliable org alias: ${JSON.stringify(aliasOptions)}`);
 
-
   if (aliasOptions.length == 0) {
-    let error = `No SFDX alias founded on ./.env, make sure that all org alias variables starts with "SF_" and has a value: "SF_PROD=MyClientProdOrg"`
+    let error = `No SFDX alias founded on ./.env, make sure that all org alias variables starts with "SF_" and has a value: "SF_PROD=MyClientProdOrg"`;
     defaultLogger.error(error);
 
     throw new Error(error);
   }
-
 
   return aliasOptions;
 }
 
 export async function selectManifestFile() {
   var manifestFile = "";
-  let message = "Select a xml file to retrieve"
-  let rootPath = Path.join(...deployUtilsConfig.package.manifestDir)
+  let message = "Select a xml file to retrieve";
+  let rootPath = Path.join(...deployUtilsConfig.package.manifestDir);
   defaultLogger.trace(`Awaiting user choose target manifest`);
+
+  if (!Fs.existsSync(rootPath)) {
+    Fs.mkdirSync(rootPath);
+    infoLogger.error(
+      `${rootPath} is empty, create a manifest file before retrive!`
+    );
+
+    return "";
+  }
 
   do {
     manifestFile = await inquirer.getFileOrDirPath({ message, rootPath });
@@ -126,7 +138,8 @@ export async function selectManifestFile() {
       defaultLogger.trace(`Awaiting user cancel process`);
 
       let cancel = await inquirer.confirm({
-        message: "Cancel retrieve?", option: { y: "Cancel", n: "Continue" }
+        message: "Cancel retrieve?",
+        option: { y: "Cancel", n: "Continue" },
       });
 
       if (cancel) {
@@ -144,7 +157,7 @@ export async function selectManifestFile() {
 export async function getTargetOrg() {
   return await inquirer.getListItem({
     message: "Select target environments",
-    options: getOrgAlias()
+    options: getOrgAlias(),
   });
 }
 
