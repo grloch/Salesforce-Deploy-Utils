@@ -1,68 +1,64 @@
-import * as inquirer from "./inquirer";
+import * as inquirer from './inquirer';
 // import * as Fs from "fs";
-import * as Path from "path";
-import * as Utils from "./utils";
-import * as ChildProcess from "child_process";
-import getLogger from "./logger";
-import * as Fs from "fs-extra";
+import * as Path from 'path';
+import * as Utils from './utils';
+import * as ChildProcess from 'child_process';
+import getLogger from './logger';
+import * as Fs from 'fs-extra';
 
 const {
   default: defaultLogger,
   info: infoLogger,
   sfdx: sfdxLogger,
-  path: logPath,
+  path: logPath
 } = getLogger({
-  indentifyer: "retrieve",
+  indentifyer: 'retrieve'
 });
 
-require("dotenv").config();
+require('dotenv').config();
 
 infoLogger.trace(`Preparing to retrive Salesforce source (${process.cwd()})`);
 
-if (Fs.existsSync("force-app")) Fs.rmSync("force-app", { recursive: true });
-Fs.mkdirSync(Path.join("force-app", "main"), { recursive: true });
+if (Fs.existsSync('force-app')) Fs.rmSync('force-app', { recursive: true });
+Fs.mkdirSync(Path.join('force-app', 'main'), { recursive: true });
 
 var manifestFile: string,
   downloadDir = Utils.defaultPackageDirectorie();
 
 async function executeRetrieve(manifestFile: string, orgAlias: string) {
   var targetOrg: string = <string>process.env[orgAlias];
-  infoLogger.info("Retrieving data from " + targetOrg);
+  infoLogger.info('Retrieving data from ' + targetOrg);
 
   var sfdxCommand = `sfdx force:source:retrieve -x="${manifestFile}" -u="${targetOrg}"`;
-  defaultLogger.trace("command ", `'${sfdxCommand}'`);
+  defaultLogger.trace('command ', `'${sfdxCommand}'`);
 
-  var destDir = Path.join("retrieved", targetOrg);
+  var destDir = Path.join('retrieved', targetOrg);
   defaultLogger.trace(`Ouput will be saved at ${destDir}`);
 
   try {
     defaultLogger.trace(`Executing SFDX command`);
 
-    const sfdxProcess = ChildProcess.exec(
-      sfdxCommand,
-      async (e: any, sOut: any, sErr: any) => {
-        // TODO Better logs
-        if (!Fs.existsSync("retrieved")) Fs.mkdirSync("retrieved");
-        if (Fs.existsSync(destDir)) Fs.rmSync(destDir, { recursive: true });
+    const sfdxProcess = ChildProcess.exec(sfdxCommand, async (e: any, sOut: any, sErr: any) => {
+      // TODO Better logs
+      if (!Fs.existsSync('retrieved')) Fs.mkdirSync('retrieved');
+      if (Fs.existsSync(destDir)) Fs.rmSync(destDir, { recursive: true });
 
-        infoLogger.info("Moving files of " + downloadDir + " to " + destDir);
+      infoLogger.info('Moving files of ' + downloadDir + ' to ' + destDir);
 
-        Fs.moveSync(downloadDir, destDir);
-        Fs.copyFileSync(manifestFile, Path.join(destDir, "package.xml"));
+      Fs.moveSync(downloadDir, destDir);
+      Fs.copyFileSync(manifestFile, Path.join(destDir, 'package.xml'));
 
-        infoLogger.info("Files moved to " + destDir);
+      infoLogger.info('Files moved to ' + destDir);
 
-        await removeProfilesUserPermissions(Path.join(destDir, "profiles"));
-      }
-    );
+      await removeProfilesUserPermissions(Path.join(destDir, 'profiles'));
+    });
 
     //@ts-ignore
-    sfdxProcess.stdout.on("data", (data) => {
-      for (var i of data.split("\n"))
-        if (i && i.trim() != "") sfdxLogger.info(i);
+    sfdxProcess.stdout.on('data', (data) => {
+      for (var i of data.split('\n')) if (i && i.trim() != '') sfdxLogger.info(i);
     });
   } catch (error) {
-    defaultLogger.error("SFDX process error: " + error);
+    defaultLogger.error('SFDX process error: ' + error);
   }
 }
 
@@ -72,7 +68,7 @@ async function removeProfilesUserPermissions(profilePath: string) {
   }
 
   var removeProfilesUserPermissions = await inquirer.confirm({
-    message: `Retrieved data has profiles, remove they user permissions?`,
+    message: `Retrieved data has profiles, remove they user permissions?`
   });
 
   if (!removeProfilesUserPermissions) {
@@ -80,22 +76,16 @@ async function removeProfilesUserPermissions(profilePath: string) {
   }
 
   for (let profileFile of Fs.readdirSync(profilePath, {
-    withFileTypes: true,
+    withFileTypes: true
   })) {
     let rawFilePath = Path.join(profilePath, profileFile.name);
     if (!profileFile.isFile()) continue;
 
     let rawFile = Fs.readFileSync(rawFilePath).toString();
-    var sanitizedFile = rawFile.replace(
-      /<userPermissions>([\s\S]*)<\/userPermissions>\n<\/Profile>/,
-      ""
-    );
+    var sanitizedFile = rawFile.replace(/<userPermissions>([\s\S]*)<\/userPermissions>\n<\/Profile>/, '');
 
-    sanitizedFile = sanitizedFile.replace(
-      /((\r\n|\n|\r)$)|(^(\r\n|\n|\r))|^\s*$/gm,
-      ""
-    );
-    sanitizedFile += "</Profile>";
+    sanitizedFile = sanitizedFile.replace(/((\r\n|\n|\r)$)|(^(\r\n|\n|\r))|^\s*$/gm, '');
+    sanitizedFile += '</Profile>';
 
     Fs.writeFileSync(rawFilePath, sanitizedFile);
   }
@@ -103,7 +93,7 @@ async function removeProfilesUserPermissions(profilePath: string) {
 
 (async () => {
   manifestFile = await Utils.selectManifestFile();
-  if (!!!manifestFile || manifestFile == "") return;
+  if (!!!manifestFile || manifestFile == '') return;
 
   executeRetrieve(manifestFile, await Utils.getTargetOrg());
 })();
